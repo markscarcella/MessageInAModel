@@ -13,7 +13,7 @@ boolean recording = false;
 IntList xPoints;
 IntList yPoints;
 int nSides = 5;
-int yHeight = 40;
+int yHeight = 50;
 
 VaseBuilder vase;
 
@@ -87,6 +87,9 @@ void draw() {
 }
 
 void mousePressed() {
+  if (vase != null) {
+     vase.vase.setVisible(false); 
+  }
   xPoints.clear();
   yPoints.clear();
   background(0);
@@ -105,8 +108,9 @@ void mouseDragged() {
 }
 
 void mouseReleased() {
-  background(0);
   vase = new VaseBuilder(xPoints, yPoints, nSides);
+  vase.record();
+  background(0);
 }
 
 void keyPressed() {
