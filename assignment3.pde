@@ -1,119 +1,77 @@
-import beads.*;
 import java.util.Arrays;
 import nervoussystem.obj.*;
-
-AudioContext ac;
-PowerSpectrum ps;
-Frequency freq;
+import processing.sound.*;
+import processing.sound.Waveform;
 
 int timer;
 int recordTime = 500;
 boolean recording = false;
 
-IntList xPoints;
-IntList yPoints;
-int nSides = 5;
-int yHeight = 50;
+int nSegments = 5;
 
-VaseBuilder vase;
+ModelBuilder model;
+AudioController audio;
+CameraController cam;
+
+float cameraX, cameraY, cameraZ, cameraRotX, cameraRotY, cameraRadius;
+float cameraRotXAmt = 10;
+float cameraRotYAmt = 10;
+boolean movingCamera = false;
+
+ViewController vc;
 
 void setup() {
-  size(600, 600, P3D);
-  ac = AudioContext.getDefaultContext();
+  frameRate(30);
+  shapeMode(CENTER);
+  textAlign(CENTER, CENTER);
+  size(1280, 720, P3D);
+  audio = new AudioController(this);
+  cam = new CameraController();
+  model = new ModelBuilder();
+  vc = new ViewController(cam, model, audio);
 
-  Gain g = new Gain(2, 0.2);
-  UGen input = ac.getAudioInput(new int[]{1, 2});
-  print(ac.getAudioFormat().outputs);
-  g.addInput(input);
-  ac.out.addInput(g);
-  /*
-   * To analyse a signal, build an analysis chain.
-   */
-  ShortFrameSegmenter sfs = new ShortFrameSegmenter(ac);
-  sfs.addInput(ac.out);
-  FFT fft = new FFT();
-  ps = new PowerSpectrum();
-  freq = new Frequency(ac.getSampleRate());
-
-  sfs.addListener(fft);     // Do an FFT on the short time segments
-  fft.addListener(ps);      // Calculate the Power Spectrum from the FFT.
-  ps.addListener(freq);     // Look for the frequency peaks in the power spectrum
-  ac.out.addDependent(sfs);
-
-
-  sfs.addSegmentListener(new SegmentListener() {
-
-    public void newSegment(TimeStamp timeStampStart, TimeStamp timeStampEnd) {
-    }
-  }
-  );
-  ac.start();
-
-  background(0);
+  background(255);
   stroke(255);
-  fill(100);
-  xPoints = new IntList();
-  yPoints = new IntList();
 }
 
 void draw() {
-  //background(0);
-  //if (keyPressed && key == 'r') {
-  //  if (!recording) {
-  //    xPoints.clear();
-  //    yPoints.clear();
-  //    background(0);
-  //    recording = true;
-  //    timer = millis();
-  //  }
-  //}
-  //if (recording) {
-  //  text("recording", 10, 10);
-  //  println(freq.getFeatures());
-  //  if (millis() - timer > recordTime) {
-  //    recording = false;
-  //    vase = new VaseBuilder(xPoints, yPoints, nSides);
-  //    vase.display(width/2, height/3, 0);
-  //  }
-  //  int x = int(map(freq.getFeatures(), 0, 2000, 10, 250));
-  //  int y = int(map(millis() - timer, 0, recordTime, 0, height));
-  //  ellipse(x, y, 1, 1);
-  //  xPoints.append(x);
-  //  yPoints.append(y);
-  //}
-  if (vase != null) {
-    vase.display(width/2, height/3, 0);
+  background(255);
+
+  vc.update();
+  vc.display();
+}
+
+void keyReleased() {
+  if (key == ' ') {
+    audio.endRecording();
+    recording = false;
+    model.profile = audio.levels;
+    model.build();
+    if (model.mesh != null) {
+      model.mesh.setVisible(true);
+      cam.reset(2*max(model.h, 2*model.r), 30, 70);
+    }
+    background(0);
   }
 }
 
-void mousePressed() {
-  if (vase != null) {
-     vase.vase.setVisible(false); 
-  }
-  xPoints.clear();
-  yPoints.clear();
-  background(0);
-  recording = true;
-}
-
-void mouseDragged() {
-  int x = int(map(mouseX,0,width,10,250));
-  int y = int(map(mouseY,0,height,0,250));
-  stroke(255);
-  ellipse(mouseX, mouseY, 1, 1);
-  if (mouseY%yHeight == 0) {
-  xPoints.append(x);
-  yPoints.append(y);
-  }
+void mouseWheel(MouseEvent event) {
+  float e = event.getCount();
+  cam.zoom(-e*10);
 }
 
 void mouseReleased() {
-  vase = new VaseBuilder(xPoints, yPoints, nSides);
-  vase.record();
-  background(0);
+  for (int i=0; i<vc.settingsLayout.components.size(); i++) {
+    vc.settingsLayout.components.get(i).setLock(false);
+  }
 }
 
-void keyPressed() {
-  background(0);
-  vase.vase.rotateY(0.1);
+void folderSelected(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("Folder selected: " + selection.getAbsolutePath());
+    model.filePath = selection.getAbsolutePath();
+    model.readyToWrite = true;
+  }
 }
