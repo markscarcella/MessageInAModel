@@ -1,4 +1,6 @@
 import java.util.List;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 class ModelBuilder {
 
@@ -206,7 +208,9 @@ class ModelBuilder {
     }
     h = profile.size()*dy;
 
-    OBJExport o = (OBJExport) createGraphics(int(2.1*rMax),int(1.1*h),"nervoussystem.obj.OBJExport", filePath+"/mymodel.obj");
+    String timeStamp = new SimpleDateFormat("yyyy-MM-dd' at 'hh.mm.ss a").format(new Date());
+
+    OBJExport o = (OBJExport) createGraphics(int(2.1*rMax),int(1.1*h),"nervoussystem.obj.OBJExport", filePath+"/Message In A Model "+timeStamp+".obj");
     o.setColor(true);
 
     o.beginDraw();
